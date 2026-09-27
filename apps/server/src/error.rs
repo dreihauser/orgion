@@ -29,6 +29,15 @@ impl ApiError {
         }
     }
 
+    pub fn unauthorized(message: impl Into<String>) -> Self {
+        ApiError {
+            status: StatusCode::UNAUTHORIZED,
+            code: "unauthorized",
+            message: message.into(),
+            extra: None,
+        }
+    }
+
     fn internal(message: impl Into<String>) -> Self {
         ApiError {
             status: StatusCode::INTERNAL_SERVER_ERROR,

@@ -21,12 +21,18 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Register a directory of .org files as a workspace and build the
-    /// initial index. Writes `orgion.toml` in the current directory.
+    /// Register a directory of .org files as a workspace, build the
+    /// initial index, and create the admin account. Writes `orgion.toml`
+    /// in the current directory.
     Init {
         dir: PathBuf,
         #[arg(long, default_value = "orgion.toml")]
         config: PathBuf,
+        #[arg(long, default_value = "admin")]
+        admin_username: String,
+        /// Generated and printed once if omitted.
+        #[arg(long)]
+        admin_password: Option<String>,
     },
     /// Start the HTTP+WebSocket server.
     Serve {
@@ -64,7 +70,9 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
     match cli.command {
-        Command::Init { dir, config } => cmd_init(dir, config).await,
+        Command::Init { dir, config, admin_username, admin_password } => {
+            cmd_init(dir, config, admin_username, admin_password).await
+        }
         Command::Serve { config } => cmd_serve(config).await,
         Command::Index { config } => cmd_index(config).await,
         Command::Check { config } => cmd_check(config).await,
@@ -72,7 +80,12 @@ async fn main() -> anyhow::Result<()> {
     }
 }
 
-async fn cmd_init(dir: PathBuf, config_path: PathBuf) -> anyhow::Result<()> {
+async fn cmd_init(
+    dir: PathBuf,
+    config_path: PathBuf,
+    admin_username: String,
+    admin_password: Option<String>,
+) -> anyhow::Result<()> {
     std::fs::create_dir_all(&dir)?;
     let abs_dir = dir.canonicalize()?;
 
@@ -97,6 +110,46 @@ async fn cmd_init(dir: PathBuf, config_path: PathBuf) -> anyhow::Result<()> {
         abs_dir.display(),
         files.len()
     );
+
+    let workspace_name = abs_dir
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| config.workspace.key.clone());
+
+    match org_index::auth::get_user_by_username(&pool, &admin_username).await? {
+        Some(existing) => {
+            org_index::auth::ensure_workspace(
+                &pool,
+                &config.workspace.key,
+                &workspace_name,
+                &abs_dir.display().to_string(),
+                &existing.id,
+            )
+            .await?;
+            println!(
+                "Account '{admin_username}' already exists; skipped creating a new one."
+            );
+        }
+        None => {
+            let password = admin_password.unwrap_or_else(org_index::auth::generate_password);
+            let user = org_index::auth::create_user(&pool, &admin_username, &password, None).await?;
+            org_index::auth::ensure_workspace(
+                &pool,
+                &config.workspace.key,
+                &workspace_name,
+                &abs_dir.display().to_string(),
+                &user.id,
+            )
+            .await?;
+            println!();
+            println!("Created admin account:");
+            println!("  username: {admin_username}");
+            println!("  password: {password}");
+            println!("(shown once — store it now; there is no password reset yet in v0.1)");
+        }
+    }
+
+    println!();
     println!("Run `orgion serve` to start the server.");
     Ok(())
 }
@@ -109,7 +162,7 @@ async fn cmd_serve(config_path: PathBuf) -> anyhow::Result<()> {
     tracing::info!(root = %config.workspace.root.display(), "reindexing workspace");
     org_index::reindex_workspace(&pool, &workspace, &config.workspace.key).await?;
 
-    let state = AppState::new(pool, workspace, config.workspace.key.clone());
+    let state = AppState::new(pool, workspace, config.workspace.key.clone(), config.auth.enabled);
 
     let _watcher = if config.index.watch {
         Some(watch::start_watching(state.clone(), tokio::runtime::Handle::current())?)

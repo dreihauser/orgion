@@ -45,6 +45,23 @@ export interface FileSummary {
   updated_at: string;
 }
 
+export interface User {
+  id: string;
+  username: string;
+  display_name: string | null;
+}
+
+export interface Workspace {
+  id: string;
+  key: string;
+  name: string;
+}
+
+export interface MeResponse {
+  user: User;
+  workspaces: Workspace[];
+}
+
 export type WsEvent =
   | { type: "node.updated"; node: OrgNode }
   | { type: "node.created"; node: OrgNode }

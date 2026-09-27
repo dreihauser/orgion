@@ -9,6 +9,7 @@
 //! and `org-parser`. Nothing here is a second source of truth.
 
 pub mod agenda;
+pub mod auth;
 pub mod backlinks;
 pub mod db;
 pub mod edit;
@@ -20,6 +21,7 @@ mod row;
 pub mod search;
 
 pub use agenda::{agenda as query_agenda, AgendaResult};
+pub use auth::{AuthError, User, WorkspaceRecord};
 pub use backlinks::backlinks;
 pub use db::connect;
 pub use edit::{edit_node, EditError};

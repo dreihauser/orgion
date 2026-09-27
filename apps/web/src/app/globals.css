@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Ties Tailwind's `dark:` variant to our own manually-toggled
+   `data-theme` attribute (see lib/theme.tsx) instead of only
+   `prefers-color-scheme`, so the Settings theme picker actually works. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   color-scheme: light dark;
 }

@@ -25,3 +25,7 @@ orgion-index.db-*
 # Env
 .env
 .env.local
+
+# Ad-hoc local run logs (from backgrounding `orgion serve`/`next dev`)
+.server-run.log
+.web-run.log

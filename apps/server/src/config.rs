@@ -74,12 +74,20 @@ fn default_database_url() -> String {
     "sqlite://./orgion-index.db".to_string()
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct AuthConfig {
-    /// Not yet enforced by v0.1 — see docs/mvp.md. Reserved so
-    /// `orgion.toml` files written today keep working once auth lands.
-    #[serde(default)]
+    /// Requires a session cookie (from `POST /api/auth/login`) on every
+    /// API route except `/api/auth/*`. `orgion init` creates the admin
+    /// account this logs into. Set to `false` for a quick local trial
+    /// with no login screen (docs/mvp.md).
+    #[serde(default = "default_true")]
     pub enabled: bool,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        AuthConfig { enabled: true }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -122,7 +130,7 @@ impl Config {
 
     pub fn write_default(path: &std::path::Path, workspace_root: &std::path::Path) -> anyhow::Result<()> {
         let contents = format!(
-            "[server]\nhost = \"{}\"\nport = {}\n\n[workspace]\nroot = \"{}\"\nkey = \"default\"\n\n[database]\nurl = \"{}\"\n\n[auth]\nenabled = false\n\n[index]\nwatch = true\n",
+            "[server]\nhost = \"{}\"\nport = {}\n\n[workspace]\nroot = \"{}\"\nkey = \"default\"\n\n[database]\nurl = \"{}\"\n\n[auth]\nenabled = true\n\n[index]\nwatch = true\n",
             default_host(),
             default_port(),
             workspace_root.display(),
