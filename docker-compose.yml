@@ -1,0 +1,36 @@
+# Minimal self-hosted deployment. Bring your own reverse proxy /
+# Cloudflare Tunnel / Tailscale in front of this — see docs/security.md
+# §8 and docs/architecture.md §22.
+#
+# v0.1 uses SQLite (a file inside ./data), which is why there is no
+# Postgres service here yet: the index schema is written to be
+# Postgres-portable (see crates/org-index), but that backend isn't wired
+# up yet. Swap `database.url` in orgion.toml for a `postgres://...` DSN
+# and add a `postgres:` service here once it is.
+
+services:
+  orgion:
+    build:
+      context: .
+      dockerfile: docker/server.Dockerfile
+    volumes:
+      - ./org:/data/org
+      - ./data:/data
+    environment:
+      ORGION_WORKSPACE_ROOT: /data/org
+      ORGION_DATABASE_URL: sqlite:///data/orgion-index.db
+      ORGION_SERVER_HOST: 0.0.0.0
+      ORGION_SERVER_PORT: "3030"
+    ports:
+      - "3030:3030"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    environment:
+      NEXT_PUBLIC_ORGION_API_URL: http://localhost:3030
+    ports:
+      - "3000:3000"
+    depends_on:
+      - orgion

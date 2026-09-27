@@ -1,0 +1,27 @@
+# Rust
+/target/
+Cargo.lock.bak
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Orgion runtime artifacts (created by `orgion init`/`orgion serve` in a
+# user's own workspace directory, not committed here)
+orgion.toml
+orgion-index.db
+orgion-index.db-*
+*.org.orig
+
+# Editors / OS
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Env
+.env
+.env.local

@@ -1,0 +1,23 @@
+[package]
+name = "org-index"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Indexing pipeline and query engine (agenda, search, backlinks) over parsed org files. SQLite by default; schema is Postgres-portable."
+
+[dependencies]
+org-model = { path = "../org-model" }
+org-parser = { path = "../org-parser" }
+org-storage = { path = "../org-storage" }
+uuid.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+sqlx = { version = "0.7", default-features = false, features = ["runtime-tokio", "sqlite", "chrono", "migrate", "macros"] }
+tokio = { version = "1", features = ["rt", "macros"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["rt", "macros", "rt-multi-thread"] }

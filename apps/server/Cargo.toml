@@ -1,0 +1,31 @@
+[package]
+name = "orgion-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Orgion's Axum HTTP+WebSocket server and orgion CLI."
+
+[[bin]]
+name = "orgion"
+path = "src/main.rs"
+
+[dependencies]
+org-model = { path = "../../crates/org-model" }
+org-parser = { path = "../../crates/org-parser" }
+org-storage = { path = "../../crates/org-storage" }
+org-index = { path = "../../crates/org-index" }
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror.workspace = true
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "sync"] }
+axum = { version = "0.7", features = ["ws"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+clap = { version = "4", features = ["derive"] }
+toml = "0.8"
+futures-util = "0.3"
+anyhow = "1"
+sqlx = { version = "0.7", default-features = false, features = ["runtime-tokio", "sqlite"] }
+notify = "6"

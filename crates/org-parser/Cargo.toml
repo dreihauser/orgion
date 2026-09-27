@@ -1,0 +1,11 @@
+[package]
+name = "org-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Lossless-ish org-mode text <-> AST parser and renderer. No I/O."
+
+[dependencies]
+org-model = { path = "../org-model" }
+chrono.workspace = true
+thiserror.workspace = true

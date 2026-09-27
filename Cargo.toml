@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/org-model",
+    "crates/org-parser",
+    "crates/org-storage",
+    "crates/org-index",
+    "apps/server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/orgion/orgion"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+uuid = { version = "1", features = ["v4", "v5", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+sha2 = "0.10"
+tracing = "0.1"
