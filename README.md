@@ -45,41 +45,49 @@ Implemented and tested:
   writes apart from external edits (18 tests, including a real
   filesystem-watch integration test).
 - **`org-index`** — SQLite-backed indexing pipeline, agenda queries (with
-  basic repeater expansion), `LIKE`-based search, and backlinks. Always
-  rebuildable from disk (12 tests, including an end-to-end test of the
-  project's "Initial Success Condition": parse → index → agenda → edit
-  via the API rewrites the file → an external edit is picked up on
-  reindex).
+  basic repeater expansion), `LIKE`-based search, backlinks, and local
+  account/session/workspace management (Argon2id password hashing,
+  hashed session tokens). Always rebuildable from disk (17 tests,
+  including an end-to-end test of the project's "Initial Success
+  Condition": parse → index → agenda → edit via the API rewrites the
+  file → an external edit is picked up on reindex).
 - **`apps/server`** — Axum REST API + WebSocket + `orgion` CLI
-  (`init`/`serve`/`index`/`check`/`doctor`). Manually verified end-to-end,
-  including the live browser test below.
-- **`apps/web`** — a minimal Next.js dashboard: file sidebar, a table view
-  over one file's headings with a click-to-cycle Status badge, and an
-  Agenda panel (Today/Overdue/Upcoming). It builds, type-checks, and was
-  exercised in a real headless-Chromium session: loading the demo file,
-  clicking a Status badge (which rewrote the file on disk), and — without
-  a manual reload — seeing an external `sed`-style edit to the file
-  propagate into the UI over the WebSocket.
+  (`init`/`serve`/`index`/`check`/`doctor`). Cookie-based session auth
+  guards every route except `/api/auth/*` (toggleable — see Quickstart).
+  Manually verified end-to-end, including the live browser test below.
+- **`apps/web`** — a Next.js workspace UI: login page, a Dashboard
+  landing page (agenda summary, stats, recent files), a directory-tree
+  file sidebar (scrollable, independent of the fixed nav above it), a
+  table view over one file's headings with a click-to-cycle Status
+  badge, and a Settings page with a Light/Dark/System theme picker. It
+  builds, type-checks, and was exercised in a real headless-Chromium
+  session end to end: unauthenticated redirect → login → dashboard →
+  tree navigation → an external `sed`-style file edit propagating into
+  the UI over WebSocket without a reload → theme persistence across a
+  reload → logout.
 
-Not yet built: authentication/ACL enforcement, Kanban/Calendar views
-beyond the table, backlinks UI, Quick Capture, dark mode, PostgreSQL (the
-index schema is written to be portable to it, but only SQLite is wired
-up), webhooks delivery, and the richer per-field `409` diff shape
-docs/api.md sketches. See [`docs/mvp.md`](docs/mvp.md) for the full
-MUST/SHOULD/NOT YET breakdown.
+Not yet built: ACL/sharing beyond a single admin workspace, Kanban/
+Calendar views beyond the table, backlinks UI, Quick Capture, PostgreSQL
+(the index schema is written to be portable to it, but only SQLite is
+wired up), webhooks delivery, OIDC/reverse-proxy auth, and the richer
+per-field `409` diff shape docs/api.md sketches. See
+[`docs/mvp.md`](docs/mvp.md) for the full MUST/SHOULD/NOT YET breakdown.
 
 ## Quickstart
 
+Nothing here is tied to a particular OS or package manager — just a
+standard Rust + Node toolchain, on Linux, macOS, or Windows.
+
 ### Requirements
 
-Rust (via [Nix](#nix-dev-shell) or `rustup`) and Node 20+. No PostgreSQL
-required for v0.1 — SQLite is used automatically.
+- **Rust**, via [rustup](https://rustup.rs). This repo ships a
+  [`rust-toolchain.toml`](rust-toolchain.toml), so once rustup is
+  installed, running `cargo` anywhere in the project auto-installs and
+  uses the pinned toolchain — no separate setup step.
+- **Node 20+** ([`.nvmrc`](.nvmrc) pins the version for nvm/fnm/Volta
+  users; any Node 20+ install works).
 
-### Nix dev shell
-
-```sh
-nix develop   # or: nix-shell -p cargo rustc pkg-config openssl sqlite nodejs_22
-```
+No PostgreSQL required for v0.1 — SQLite is used automatically.
 
 ### Try it
 
@@ -97,6 +105,11 @@ DEADLINE: <2026-10-01 Thu>
 EOF
 
 cargo run -p orgion-server --bin orgion -- init ~/org
+```
+
+This prints a generated admin username/password once — save it. Then:
+
+```sh
 cargo run -p orgion-server --bin orgion -- serve
 ```
 
@@ -105,13 +118,19 @@ In another terminal:
 ```sh
 cd apps/web
 npm install
-NEXT_PUBLIC_ORGION_API_URL=http://localhost:3030 npm run dev
+npm run dev
 ```
 
-Open http://localhost:3000 (or whatever port `next dev` picks). Click a
-task's status badge — it cycles TODO → NEXT → DONE → (none) and rewrites
+Open http://localhost:3000, log in with the credentials `init` printed,
+and you'll land on the Dashboard. Click a task's status badge in the
+Workspace view — it cycles TODO → NEXT → DONE → (none) and rewrites
 `~/org/tasks.org` in place. Edit that file directly (Emacs, vim, `sed`)
 and the change appears in the browser without a reload.
+
+`next dev` proxies `/api/*` to `orgion serve` on `localhost:3030` by
+default (see `apps/web/next.config.mjs`); set `ORGION_API_ORIGIN` if
+it's running elsewhere. Set `[auth] enabled = false` in `orgion.toml` to
+skip the login screen for a quick local trial.
 
 ### Docker Compose
 
@@ -139,6 +158,8 @@ crates/
   org-index/    Indexing pipeline + query engine (agenda/search/backlinks)
 docs/           Design docs — start with docs/architecture.md
 docker/         Dockerfiles + entrypoint
+rust-toolchain.toml   Pins the Rust toolchain for `rustup` (any OS)
+.nvmrc                Pins the Node version for nvm/fnm/Volta (any OS)
 ```
 
 ## Documentation
@@ -154,7 +175,7 @@ docker/         Dockerfiles + entrypoint
 ## Development
 
 ```sh
-cargo test --workspace         # 64 tests across org-model/parser/storage/index
+cargo test --workspace         # 69 tests across org-model/parser/storage/index
 cd apps/web && npx tsc --noEmit && npm run build
 ```
 
